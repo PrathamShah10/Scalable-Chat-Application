@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@repo/ui": "*",
+    "dotenv": "^16.4.5",
     "next": "^14.1.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^14.1.1",
