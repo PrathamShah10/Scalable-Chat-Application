@@ -27,10 +27,18 @@ export async function createProducer() {
   return producer;
 }
 
-export async function produceMessage(message: string) {
+// export async function produceMessage(message: string) {
+//   const producer = await createProducer();
+//   await producer.send({
+//     messages: [{ key: `message-${Date.now()}`, value: message }],
+//     topic: "MESSAGES",
+//   });
+//   return true;
+// }
+export async function produceMessage({ message, senderName }: { message: string; senderName: string }) {
   const producer = await createProducer();
   await producer.send({
-    messages: [{ key: `message-${Date.now()}`, value: message }],
+    messages: [{ key: `message-${Date.now()}`, value: JSON.stringify({ message, senderName }) }],
     topic: "MESSAGES",
   });
   return true;
@@ -48,9 +56,11 @@ export async function startMessageConsumer() {
       if (!message.value) return;
       console.log(`New Message Recv..`);
       try {
+        const { message: text, senderName } = JSON.parse(message.value.toString());
         await prismaClient.message.create({
           data: {
-            text: message.value?.toString(),
+            text,
+            senderName,
           },
         });
       } catch (err) {

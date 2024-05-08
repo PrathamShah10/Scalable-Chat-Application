@@ -5,10 +5,12 @@ import { io, Socket } from "socket.io-client";
 interface SocketProviderProps {
   children?: React.ReactNode;
 }
-
 interface ISocketContext {
-  sendMessage: (msg: string) => any;
-  messages: string[];
+  sendMessage: (msg: string, name: string) => any;
+  updateMessages: (
+    newMessages: { senderName: string; message: string }[]
+  ) => any;
+  messages: { senderName: string; message: string }[];
 }
 
 const SocketContext = React.createContext<ISocketContext | null>(null);
@@ -22,33 +24,36 @@ export const useSocket = () => {
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [socket, setSocket] = useState<Socket>();
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<
+    { senderName: string; message: string }[]
+  >([]);
 
   const sendMessage: ISocketContext["sendMessage"] = useCallback(
-    (msg) => {
+    (msg: string, name: string) => {
       console.log("Send Message", msg);
       if (socket) {
-        socket.emit("event:message", { message: msg });
+        socket.emit("event:message", { message: msg, senderName: name });
       }
     },
     [socket]
   );
 
+  const updateMessages = (
+    newMessages: { senderName: string; message: string }[]
+  ) => {
+    setMessages(newMessages);
+  };
+
   const onMessageRec = useCallback((msg: string) => {
     console.log("From Server Msg Rec", msg);
-    const { message } = JSON.parse(msg) as { message: string };
-    setMessages((prev) => [...prev, message]);
-  }, []);
-  useEffect(() => {
-    const fetchData = async () => {
-      const res = await fetch("http://localhost:8000/api/messages");
-      const data = await res.json();
-      setMessages(
-        data.map((m: { text: string }) => JSON.parse(m.text).message)
-      );
+    const { message, senderName } = JSON.parse(msg) as {
+      message: string;
+      senderName: string;
     };
+    setMessages((prev) => [...prev, { senderName, message }]);
+  }, []);
 
-    fetchData();
+  useEffect(() => {
     const _socket = io("http://localhost:8000");
     _socket.on("message", onMessageRec);
     setSocket(_socket);
@@ -61,7 +66,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   }, []);
 
   return (
-    <SocketContext.Provider value={{ sendMessage, messages }}>
+    <SocketContext.Provider value={{ sendMessage, updateMessages, messages }}>
       {children}
     </SocketContext.Provider>
   );
